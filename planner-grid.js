@@ -475,6 +475,7 @@ function hasConflict(a1, a2) {
 
 function switchDrawerTab(tabId) {
   state.drawerTab = tabId;
+  planInfoExpanded = false;
   renderDrawerTabs();
   renderDrawer();
 }
@@ -528,6 +529,16 @@ function loadPlanToShortlist(planId) {
   renderGuide();
 }
 
+var planInfoExpanded = false;
+
+function togglePlanInfo() {
+  planInfoExpanded = !planInfoExpanded;
+  var detail = document.getElementById("plan-detail");
+  var chevron = document.getElementById("plan-bar-chevron");
+  if (detail) detail.classList.toggle("open", planInfoExpanded);
+  if (chevron) chevron.classList.toggle("expanded", planInfoExpanded);
+}
+
 function renderPlanInfo() {
   var infoEl = document.getElementById("drawer-plan-info");
 
@@ -552,16 +563,35 @@ function renderPlanInfo() {
     else hasUnknown = true;
   });
 
-  var html = '<div class="plan-info">';
-  html += '<div class="plan-info-name">Plan ' + plan.id + ': ' + esc(plan.name) + '</div>';
+  var costStr = '$' + totalCost.toFixed(2) + (hasUnknown ? '+' : '');
+
+  // Compact bar (always visible)
+  var html = '<div class="plan-bar" onclick="togglePlanInfo()">';
+  html += '<div class="plan-bar-text">';
+  html += '<div class="plan-bar-title">Plan ' + plan.id + ': ' + esc(plan.name) + '</div>';
+  html += '<div class="plan-bar-sub">' + activities.length + ' activities &middot; ' + costStr + ' &middot; ' + esc(plan.tags.join(', ')) + '</div>';
+  html += '</div>';
+
+  if (allInPlan) {
+    html += '<button class="btn-load-plan loaded" onclick="event.stopPropagation()">Loaded</button>';
+  } else {
+    html += '<button class="btn-load-plan" onclick="event.stopPropagation();loadPlanToShortlist(\'' + plan.id + '\')">Load Plan</button>';
+  }
+
+  html += '<div class="plan-bar-chevron' + (planInfoExpanded ? ' expanded' : '') + '" id="plan-bar-chevron">';
+  html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>';
+  html += '</div>';
+  html += '</div>';
+
+  // Expandable detail
+  html += '<div class="plan-detail' + (planInfoExpanded ? ' open' : '') + '" id="plan-detail">';
+  html += '<div class="plan-detail-inner">';
   html += '<div class="plan-info-desc">' + esc(plan.desc) + '</div>';
 
   html += '<div class="plan-tags">';
   plan.tags.forEach(function(tag) {
     html += '<span class="plan-tag">' + esc(tag) + '</span>';
   });
-  html += '<span class="plan-tag">' + activities.length + ' activities</span>';
-  html += '<span class="plan-tag">$' + totalCost.toFixed(2) + (hasUnknown ? ' + fees' : '') + '</span>';
   html += '</div>';
 
   activities.forEach(function(a) {
@@ -571,13 +601,8 @@ function renderPlanInfo() {
     }
   });
 
-  if (allInPlan) {
-    html += '<button class="btn-load-plan loaded">Already in your shortlist</button>';
-  } else {
-    html += '<button class="btn-load-plan" onclick="loadPlanToShortlist(\'' + plan.id + '\')">Load Plan into My Shortlist</button>';
-  }
+  html += '</div></div>';
 
-  html += '</div>';
   infoEl.innerHTML = html;
 }
 

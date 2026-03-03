@@ -963,18 +963,73 @@ body {
   color: var(--accent);
 }
 
-/* Plan info card inside drawer */
-.plan-info {
-  padding: 14px 16px;
+/* Plan info — collapsed bar */
+.plan-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
   background: var(--paper-2);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  cursor: pointer;
+  transition: background 0.1s;
+  user-select: none;
 }
-.plan-info-name {
-  font-size: 0.9375rem;
+.plan-bar:hover { background: var(--paper-3); }
+.plan-bar-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.plan-bar-title {
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--ink);
-  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.plan-bar-sub {
+  font-size: 0.6875rem;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.plan-bar-chevron {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-3);
+  transition: transform 0.2s;
+}
+.plan-bar-chevron.expanded { transform: rotate(180deg); }
+.plan-bar .btn-load-plan {
+  flex-shrink: 0;
+  width: auto;
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  margin: 0;
+}
+
+/* Plan info — expanded detail */
+.plan-detail {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+  background: var(--paper-2);
+  border-bottom: 1px solid transparent;
+}
+.plan-detail.open {
+  max-height: 300px;
+  border-bottom-color: var(--border);
+}
+.plan-detail-inner {
+  padding: 0 16px 12px;
 }
 .plan-info-desc {
   font-size: 0.8125rem;
@@ -986,7 +1041,7 @@ body {
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 .plan-tag {
   font-size: 0.6875rem;
@@ -1000,7 +1055,7 @@ body {
 .plan-note {
   font-size: 0.75rem;
   color: var(--ink-3);
-  padding: 3px 0;
+  padding: 2px 0;
   display: flex;
   align-items: baseline;
   gap: 6px;
@@ -1012,10 +1067,9 @@ body {
   flex-shrink: 0;
 }
 .btn-load-plan {
-  width: 100%;
-  padding: 10px 16px;
+  padding: 5px 12px;
   border-radius: var(--r);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
@@ -1023,7 +1077,6 @@ body {
   border: 1.5px solid var(--accent);
   background: var(--accent);
   color: white;
-  margin-top: 10px;
 }
 .btn-load-plan:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .btn-load-plan.loaded {
