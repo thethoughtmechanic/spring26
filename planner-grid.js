@@ -12,6 +12,79 @@ var CATS = {
 
 var CAT_ORDER = ["Dance", "Arts & Crafts", "Gymnastics", "Martial Arts", "Swimming", "Skating", "Sports", "Other"];
 
+// ── Recommended Plans (from 8 Mercer St analysis) ──
+var SAT_ANCHOR = [142277, 142636]; // Canoe Landing: Gym 9:30 + Ballet 10:45
+
+var RECOMMENDED_PLANS = [
+  {
+    id: "A",
+    name: "The Sweet Spot",
+    desc: "Walkable Saturday + Swim & first-ever Martial Arts w/ Caregiver on Sunday. ~90 min gap between swim and MA for a relaxed brunch.",
+    tags: ["swim", "martial arts", "caregiver"],
+    ids: SAT_ANCHOR.concat([138909, 154086]),
+    notes: {
+      138909: "Hillcrest — 8 min drive",
+      154086: "Trace Manes — 12 min drive, great for first-timers"
+    }
+  },
+  {
+    id: "B",
+    name: "Karate + Trinity Swim",
+    desc: "Solo Karate at East York, then backtrack to Trinity for swim. Both short drives, but opposite directions.",
+    tags: ["swim", "martial arts"],
+    ids: SAT_ANCHOR.concat([127550, 141118]),
+    notes: {
+      127550: "East York — 12 min drive, no caregiver (drop-off)",
+      141118: "Trinity — 5 min drive"
+    }
+  },
+  {
+    id: "C",
+    name: "East York Sunday",
+    desc: "Stay in one neighbourhood Sunday: Karate at East York + Swim at nearby Frankland. One drive, no backtracking.",
+    tags: ["swim", "martial arts"],
+    ids: SAT_ANCHOR.concat([127550, 138752]),
+    notes: {
+      127550: "East York — 12 min drive",
+      138752: "Frankland — 2 min from East York"
+    }
+  },
+  {
+    id: "D",
+    name: "3-Activity Saturday",
+    desc: "Add swim to Saturday at Wellesley (5 min walk from Canoe Landing), then a relaxed Sunday with just MA w/ Caregiver.",
+    tags: ["swim", "martial arts", "caregiver"],
+    ids: SAT_ANCHOR.concat([141426, 128631]),
+    notes: {
+      141426: "Wellesley — walkable from Canoe Landing",
+      128631: "Trace Manes — 12 min drive, only commitment Sunday"
+    }
+  },
+  {
+    id: "E",
+    name: "Skating + MA",
+    desc: "Fit swimming into Saturday afternoon at Trinity. Sunday: try skating at East York Arena, then MA w/ Caregiver at Trace Manes.",
+    tags: ["swim", "skating", "martial arts", "caregiver"],
+    ids: SAT_ANCHOR.concat([142629, 142381, 128632]),
+    notes: {
+      142629: "Trinity Swim — 5 min drive, Sat afternoon",
+      142381: "East York Arena — skate 9:45, 12 min drive",
+      128632: "Trace Manes — MA w/ CG 11:00, 10 min from arena"
+    }
+  },
+  {
+    id: "F",
+    name: "Swim + Crafts at Hillcrest",
+    desc: "Same-venue Sunday at Hillcrest: swim then crafts with caregiver. Zero commute between activities.",
+    tags: ["swim", "arts & crafts", "caregiver"],
+    ids: SAT_ANCHOR.concat([138909, 140656]),
+    notes: {
+      138909: "Hillcrest Swim — 8 min drive",
+      140656: "Hillcrest Crafts w/ CG — same building, 30 min gap"
+    }
+  }
+];
+
 // ── State ──
 // Build location list from data
 var ALL_LOCATIONS = (function() {
@@ -24,11 +97,12 @@ var state = {
   day: "Sat",
   search: "",
   enabledCats: {},
-  enabledLocs: null,  // null = all locations, Set = specific ones
+  enabledLocs: null,
   locSearch: "",
   zoom: 100,
   plan: JSON.parse(localStorage.getItem("spring26_plan") || "[]"),
-  selectedId: null
+  selectedId: null,
+  drawerTab: "mine" // "mine" or plan id like "A","B",...
 };
 CAT_ORDER.forEach(function(c) { state.enabledCats[c] = true; });
 
@@ -380,6 +454,7 @@ function updateBadge() {
 
 // ── Shortlist drawer ──
 function openDrawer() {
+  renderDrawerTabs();
   renderDrawer();
   document.getElementById("drawer-overlay").classList.add("open");
   document.getElementById("drawer").classList.add("open");
@@ -398,54 +473,177 @@ function hasConflict(a1, a2) {
   return t1.start < t2.end && t2.start < t1.end;
 }
 
+function switchDrawerTab(tabId) {
+  state.drawerTab = tabId;
+  renderDrawerTabs();
+  renderDrawer();
+}
+
+function renderDrawerTabs() {
+  var container = document.getElementById("drawer-tabs");
+  var html = '';
+
+  html += '<button class="drawer-tab' + (state.drawerTab === "mine" ? " active" : "") + '" onclick="switchDrawerTab(\'mine\')">';
+  html += 'My Shortlist';
+  if (state.plan.length > 0) html += ' <span class="tab-badge">' + state.plan.length + '</span>';
+  html += '</button>';
+
+  RECOMMENDED_PLANS.forEach(function(plan) {
+    var isActive = state.drawerTab === plan.id;
+    html += '<button class="drawer-tab' + (isActive ? " active" : "") + '" onclick="switchDrawerTab(\'' + plan.id + '\')">';
+    html += 'Plan ' + plan.id;
+    html += '</button>';
+  });
+
+  container.innerHTML = html;
+
+  var clearBtn = document.getElementById("drawer-clear-btn");
+  clearBtn.style.display = state.drawerTab === "mine" ? "" : "none";
+}
+
+function getActivitiesForPlan(plan) {
+  return plan.ids.map(function(id) {
+    return DATA.find(function(d) { return d.id === id; });
+  }).filter(Boolean);
+}
+
+function loadPlanToShortlist(planId) {
+  var plan = RECOMMENDED_PLANS.find(function(p) { return p.id === planId; });
+  if (!plan) return;
+  var activities = getActivitiesForPlan(plan);
+  var existingIds = {};
+  state.plan.forEach(function(a) { existingIds[a.id] = true; });
+
+  activities.forEach(function(a) {
+    if (!existingIds[a.id]) {
+      state.plan.push(a);
+      existingIds[a.id] = true;
+    }
+  });
+
+  savePlan();
+  state.drawerTab = "mine";
+  renderDrawerTabs();
+  renderDrawer();
+  renderGuide();
+}
+
+function renderPlanInfo() {
+  var infoEl = document.getElementById("drawer-plan-info");
+
+  if (state.drawerTab === "mine") {
+    infoEl.innerHTML = '';
+    return;
+  }
+
+  var plan = RECOMMENDED_PLANS.find(function(p) { return p.id === state.drawerTab; });
+  if (!plan) { infoEl.innerHTML = ''; return; }
+
+  var activities = getActivitiesForPlan(plan);
+  var allInPlan = activities.every(function(a) {
+    return state.plan.some(function(p) { return p.id === a.id; });
+  });
+
+  var totalCost = 0;
+  var hasUnknown = false;
+  activities.forEach(function(a) {
+    var p = parsePrice(a.price);
+    if (p !== null) totalCost += p;
+    else hasUnknown = true;
+  });
+
+  var html = '<div class="plan-info">';
+  html += '<div class="plan-info-name">Plan ' + plan.id + ': ' + esc(plan.name) + '</div>';
+  html += '<div class="plan-info-desc">' + esc(plan.desc) + '</div>';
+
+  html += '<div class="plan-tags">';
+  plan.tags.forEach(function(tag) {
+    html += '<span class="plan-tag">' + esc(tag) + '</span>';
+  });
+  html += '<span class="plan-tag">' + activities.length + ' activities</span>';
+  html += '<span class="plan-tag">$' + totalCost.toFixed(2) + (hasUnknown ? ' + fees' : '') + '</span>';
+  html += '</div>';
+
+  activities.forEach(function(a) {
+    var note = plan.notes[a.id];
+    if (note) {
+      html += '<div class="plan-note">' + esc(note) + '</div>';
+    }
+  });
+
+  if (allInPlan) {
+    html += '<button class="btn-load-plan loaded">Already in your shortlist</button>';
+  } else {
+    html += '<button class="btn-load-plan" onclick="loadPlanToShortlist(\'' + plan.id + '\')">Load Plan into My Shortlist</button>';
+  }
+
+  html += '</div>';
+  infoEl.innerHTML = html;
+}
+
 function renderDrawer() {
+  renderPlanInfo();
+
+  var items;
+  var isMyPlan = state.drawerTab === "mine";
+
+  if (isMyPlan) {
+    items = state.plan;
+  } else {
+    var plan = RECOMMENDED_PLANS.find(function(p) { return p.id === state.drawerTab; });
+    items = plan ? getActivitiesForPlan(plan) : [];
+  }
+
   var CAL_START = 8;
   var CAL_END = 18;
   var HOUR_PX = 72;
   var totalHeight = (CAL_END - CAL_START) * HOUR_PX;
 
-  var sat = state.plan.filter(function(a) { return a.day === "Sat"; });
-  var sun = state.plan.filter(function(a) { return a.day === "Sun"; });
+  var sat = items.filter(function(a) { return a.day === "Sat"; });
+  var sun = items.filter(function(a) { return a.day === "Sun"; });
 
   var conflictIds = {};
-  function checkConflicts(items) {
-    for (var i = 0; i < items.length; i++)
-      for (var j = i + 1; j < items.length; j++)
-        if (hasConflict(items[i], items[j])) {
-          conflictIds[items[i].id] = true;
-          conflictIds[items[j].id] = true;
+  function checkConflicts(list) {
+    for (var i = 0; i < list.length; i++)
+      for (var j = i + 1; j < list.length; j++)
+        if (hasConflict(list[i], list[j])) {
+          conflictIds[list[i].id] = true;
+          conflictIds[list[j].id] = true;
         }
   }
   checkConflicts(sat);
   checkConflicts(sun);
 
-  // Update total
-  var totalCost = 0;
-  var hasUnknown = false;
-  state.plan.forEach(function(a) {
-    var p = parsePrice(a.price);
-    if (p !== null) totalCost += p;
-    else hasUnknown = true;
-  });
-  document.getElementById("drawer-total").textContent =
-    state.plan.length === 0 ? "\u2014" : state.plan.length + " activities \u00B7 $" + totalCost.toFixed(2) + (hasUnknown ? " + fees" : "");
+  // Update header totals (only for "mine" tab)
+  if (isMyPlan) {
+    var totalCost = 0;
+    var hasUnknown = false;
+    state.plan.forEach(function(a) {
+      var p = parsePrice(a.price);
+      if (p !== null) totalCost += p;
+      else hasUnknown = true;
+    });
+    document.getElementById("drawer-total").textContent =
+      state.plan.length === 0 ? "\u2014" : state.plan.length + " activities \u00B7 $" + totalCost.toFixed(2) + (hasUnknown ? " + fees" : "");
+  } else {
+    document.getElementById("drawer-total").textContent = "Plan " + state.drawerTab;
+  }
 
   var body = document.getElementById("drawer-body");
 
-  if (state.plan.length === 0) {
-    body.innerHTML = '<div class="cal-empty">No activities added yet.<br>Click blocks in the TV Guide, then "+ Add to Shortlist".</div>';
+  if (items.length === 0) {
+    body.innerHTML = isMyPlan
+      ? '<div class="cal-empty">No activities added yet.<br>Click blocks in the TV Guide, then "+ Add to Shortlist".<br><br>Or explore the Plan tabs above for curated recommendations.</div>'
+      : '<div class="cal-empty">No activities in this plan.</div>';
     return;
   }
 
-  // Build calendar grid
   var html = '<div class="cal-grid">';
 
-  // Column headers
   html += '<div class="cal-col-header"></div>';
   html += '<div class="cal-col-header">Saturday (' + sat.length + ')</div>';
   html += '<div class="cal-col-header">Sunday (' + sun.length + ')</div>';
 
-  // Time column
   html += '<div class="cal-time-col" style="height:' + totalHeight + 'px">';
   for (var h = CAL_START; h <= CAL_END; h++) {
     var y = (h - CAL_START) * HOUR_PX;
@@ -453,11 +651,9 @@ function renderDrawer() {
   }
   html += '</div>';
 
-  // Render a day column
-  function renderDayCol(items) {
+  function renderDayCol(dayItems) {
     html += '<div class="cal-day-col" style="height:' + totalHeight + 'px">';
 
-    // Hour lines
     for (var h = CAL_START; h <= CAL_END; h++) {
       var y = (h - CAL_START) * HOUR_PX;
       html += '<div class="cal-hour-line" style="top:' + y + 'px"></div>';
@@ -466,8 +662,7 @@ function renderDrawer() {
       }
     }
 
-    // Events
-    items.forEach(function(a) {
+    dayItems.forEach(function(a) {
       var tr = parseTimeRange(a.t);
       if (!tr) return;
 
@@ -482,7 +677,11 @@ function renderDrawer() {
       html += '<div class="cal-event' + (isConflict ? ' conflict' : '') + '" ' +
         'style="top:' + top + 'px;height:' + height + 'px;background:' + cat.bg + ';color:' + cat.text + '" ' +
         'title="' + esc(a.n) + ' @ ' + esc(a.loc) + '">';
-      html += '<button class="cal-event-remove" onclick="event.stopPropagation();removeFromPlan(' + a.id + ')">&times;</button>';
+
+      if (isMyPlan) {
+        html += '<button class="cal-event-remove" onclick="event.stopPropagation();removeFromPlan(' + a.id + ')">&times;</button>';
+      }
+
       html += '<div class="cal-event-name">' + esc(a.n) + '</div>';
       html += '<div class="cal-event-meta">' + esc(a.loc) + '</div>';
       if (height > 42) {

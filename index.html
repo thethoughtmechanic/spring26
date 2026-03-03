@@ -914,6 +914,123 @@ body {
   border-radius: 50%;
   background: var(--error);
 }
+
+/* ── DRAWER TABS ── */
+.drawer-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--paper-2);
+  flex-shrink: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.drawer-tabs::-webkit-scrollbar { display: none; }
+.drawer-tab {
+  padding: 10px 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--ink-3);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.12s;
+  flex-shrink: 0;
+}
+.drawer-tab:hover { color: var(--ink); background: var(--paper-3); }
+.drawer-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: var(--paper);
+}
+.drawer-tab .tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  margin-left: 4px;
+}
+.drawer-tab.active .tab-badge {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+/* Plan info card inside drawer */
+.plan-info {
+  padding: 14px 16px;
+  background: var(--paper-2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.plan-info-name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.plan-info-desc {
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+.plan-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.plan-tag {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--paper-3);
+  color: var(--ink-2);
+  border: 1px solid var(--border);
+}
+.plan-note {
+  font-size: 0.75rem;
+  color: var(--ink-3);
+  padding: 3px 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  line-height: 1.4;
+}
+.plan-note::before {
+  content: '→';
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+.btn-load-plan {
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: var(--r);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.12s;
+  border: 1.5px solid var(--accent);
+  background: var(--accent);
+  color: white;
+  margin-top: 10px;
+}
+.btn-load-plan:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn-load-plan.loaded {
+  background: var(--success);
+  border-color: var(--success);
+  cursor: default;
+}
 </style>
 </head>
 <body>
@@ -989,10 +1106,12 @@ body {
     <span class="drawer-title">Weekend Schedule</span>
     <div style="display:flex;align-items:center;gap:10px">
       <span class="drawer-total-value" id="drawer-total" style="font-size:0.8125rem">&mdash;</span>
-      <button class="btn-drawer btn-drawer-danger" style="flex:none;padding:5px 10px;font-size:0.75rem" onclick="clearAll()">Clear</button>
+      <button class="btn-drawer btn-drawer-danger" id="drawer-clear-btn" style="flex:none;padding:5px 10px;font-size:0.75rem" onclick="clearAll()">Clear</button>
       <button class="detail-close" onclick="closeDrawer()">&times;</button>
     </div>
   </div>
+  <div class="drawer-tabs" id="drawer-tabs"></div>
+  <div id="drawer-plan-info"></div>
   <div class="cal-wrap" id="drawer-body"></div>
 </div>
 
